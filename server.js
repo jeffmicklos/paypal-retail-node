@@ -97,6 +97,8 @@ app.get("/returnFromPayPal", function(req, res) {
 });
 
 app.get("/refresh", function(req, res) {
+  configurePayPal(req.query.paypalAccountRegion);
+
   paypal.refresh(req.query, APP_SECURE_IDENTIFIER, function(error, token) {
     if (error) {
       return res.status(500).send(error.message);
@@ -130,14 +132,28 @@ var server = app.listen(process.env.PORT || 3000, function() {
 });
 
 /******************************** The rest is just boring helpers ********************************/
-function configurePayPal() {
+function configurePayPal(paypalAccountRegion) {
   if (hasLive) {
     console.log("Configuring LIVE environment");
     // This line adds the live configuration to the PayPal module.
     // If you're going to write your own server, this is the money line
+
+    var clientId, secret;
+
+    if (paypalAccountRegion === "NY") {
+      clientId = process.env.NYC_PAYPAL_LIVE_CLIENTID;
+      secret = process.env.NYC_PAYPAL_LIVE_SECRET;
+    } else if (paypalAccountRegion === "LA") {
+      clientId = process.env.LAX_PAYPAL_LIVE_CLIENTID;
+      secret = process.env.LAX_PAYPAL_LIVE_SECRET;
+    } else {
+      clientId = process.env.PAYPAL_LIVE_CLIENTID;
+      secret = process.env.PAYPAL_LIVE_SECRET;
+    }
+
     paypal.configure(paypal.LIVE, {
-      clientId: PAYPAL_LIVE_CLIENTID,
-      secret: PAYPAL_LIVE_SECRET,
+      clientId: clientId,
+      secret: secret,
       returnUrl: combineUrl(ROOT_URL, "returnFromPayPal"),
       refreshUrl: combineUrl(ROOT_URL, "refresh"),
       scopes: process.env.SCOPES // This is optional, we have defaults in paypal-retail-node
